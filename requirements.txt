@@ -1,0 +1,6 @@
+docopt
+dpcontracts
+haystack
+pip
+setuptools
+wheel
