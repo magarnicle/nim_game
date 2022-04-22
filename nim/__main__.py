@@ -18,12 +18,6 @@ from dpcontracts import ensure, PostconditionError
 from docopt import docopt
 from pprint import pprint
 
-class Stack():
-    """Represents a stack of objects."""
-
-    def __init__(self, objects: int):
-        self.objects = objects
-
 class PlayerType(IntEnum):
     """Whether a player is a computer or a human."""
 
@@ -39,15 +33,15 @@ class PlayerType(IntEnum):
     def __sub__(self, value):
         return self.__add__(-value)
 
-def take_objects(stack: Stack, objects_to_take: int) -> None:
+def take_objects(stack: int, objects_to_take: int) -> None:
     """Take a number of objects from a stack."""
-    stack.objects = max(0, stack.objects - objects_to_take)
+    return max(0, stack - objects_to_take)
 
-def stack_empty(stack: Stack) -> bool:
+def stack_empty(stack: int) -> bool:
     """Check if a stack is empty."""
-    return stack.objects == 0
+    return stack == 0
 
-def game_over(stacks: ty.List[Stack]) -> bool:
+def game_over(stacks: ty.List[int]) -> bool:
     """Check if the game is over."""
     return all(map(stack_empty, stacks))
 
@@ -59,7 +53,7 @@ def _positive_object_count_check(args, ret):
 
 @ensure("Number of objects must be greater than 0", _positive_object_count_check)
 @ensure("Cannot remove object from empty stack", _empty_stack_check)
-def get_move(player_type: PlayerType, stacks: ty.List[Stack]) -> ty.Tuple[int, int]:
+def get_move(player_type: PlayerType, stacks: ty.List[int]) -> ty.Tuple[int, int]:
     """Get a new move (a stack index and a number objects to take).
     The move can come from a human or the computer."""
     match player_type:
@@ -70,10 +64,10 @@ def get_move(player_type: PlayerType, stacks: ty.List[Stack]) -> ty.Tuple[int, i
             return _get_human_move(stacks)
 
 
-def _get_computer_move(stacks: ty.List[Stack]) -> ty.Tuple[int, int]:
+def _get_computer_move(stacks: ty.List[int]) -> ty.Tuple[int, int]:
     return 0, 0
 
-def _get_human_move(stacks: ty.List[Stack]) -> ty.Tuple[int, int]:
+def _get_human_move(stacks: ty.List[int]) -> ty.Tuple[int, int]:
     return int(input("Which stack? ")), int(input("How many objects to take? "))
 
 def determine_winner(current_player: PlayerType, misere: bool=False) -> PlayerType:
@@ -81,23 +75,25 @@ def determine_winner(current_player: PlayerType, misere: bool=False) -> PlayerTy
         return current_player
     return current_player + 1
 
-def print_game_board(stacks: ty.List[Stack], player_turn: PlayerType) -> None:
+def print_game_board(stacks: ty.List[int], player_turn: PlayerType) -> None:
     """Print the state of the game."""
     index_texts = ""
     object_texts = ""
     for index, stack in enumerate(stacks):
-        object_text = str(stack.objects)
+        object_text = str(stack)
         object_texts += f"\t{object_text}"
         index_text = (str(index) + (" " * len(object_text)))[:len(object_text)]
         index_texts += f"\t{index_text}"
-    print("\tStacks\t")
-    print(f"Index:   {index_texts.lstrip('\t')}")
-    print(f"Objects: {object_texts.lstrip('\t')}")
+    index_texts = index_texts.lstrip('\t')
+    object_texts = object_texts.lstrip('\t')
+    print("\n\tStacks\t")
+    print(f"Index:   {index_texts}")
+    print(f"Objects: {object_texts}")
     print(f"It is {player_turn.name}'s turn.")
 
 def main(ops: ty.Dict[str, ty.Any]) -> int:
     pprint(ops, stream=sys.stderr)
-    stacks = [Stack(int(ops["--objects"])) for i in range(0, int(ops["--stacks"]))]
+    stacks = [int(ops["--objects"]) for i in range(0, int(ops["--stacks"]))]
     player_turn = PlayerType.COMPUTER if ops["--computer-first"] else PlayerType.HUMAN
     while not game_over(stacks):
         print_game_board(stacks, player_turn)
@@ -109,7 +105,7 @@ def main(ops: ty.Dict[str, ty.Any]) -> int:
                 continue
             else:
                 break
-        take_objects(stacks[stack_index], objects_to_take)
+        stacks[stack_index] = take_objects(stacks[stack_index], objects_to_take)
         player_turn += 1
     print(f"{determine_winner(player_turn, ops['--misère']).name} won!")
     return 0
