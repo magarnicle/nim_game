@@ -1,14 +1,12 @@
 """Nim game.
 
-
 Usage:
-    nim_game [-s STACKS -o OBJECTS -cm]
+    nim_game [-cm] STACK ...
 
 Options:
-    -s, --stacks=STACKS     Number of stacks [default: 3]
-    -o, --objects=OBJECTS   Number of objects in each stack [default: 11]
-    -c, --computer-first    The computer, not the player, goes first.
+    STACK                   One or more stacks, being the number of objects in the stack.
     -m, --misère            Win by forcing opponent to take last object.
+    -c, --computer-first    The computer, not the player, goes first.
 """
 import sys
 import typing as ty
@@ -93,7 +91,8 @@ def print_game_board(stacks: ty.List[int], player_turn: PlayerType) -> None:
 
 def main(ops: ty.Dict[str, ty.Any]) -> int:
     pprint(ops, stream=sys.stderr)
-    stacks = [int(ops["--objects"]) for i in range(0, int(ops["--stacks"]))]
+    stacks = [int(stack) for stack in ops["STACK"]]
+    assert all(map(lambda stack: stack > 0, stacks)), "Stacks must have at least one object in them"
     player_turn = PlayerType.COMPUTER if ops["--computer-first"] else PlayerType.HUMAN
     while not game_over(stacks):
         print_game_board(stacks, player_turn)
