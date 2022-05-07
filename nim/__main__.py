@@ -13,6 +13,8 @@ import typing as ty
 from enum import IntEnum
 from dpcontracts import ensure, PostconditionError
 import random
+import tkinter
+import tkinter.messagebox
 
 from docopt import docopt
 from pprint import pprint
@@ -108,8 +110,23 @@ def print_game_board(stacks: ty.List[int]) -> None:
     print(f"Index:   {index_texts}")
     print(f"Objects: {object_texts}")
 
+def setup_game_board() -> tkinter.Tk:
+    window = tkinter.Tk(className="Nim Game", useTk=1)
+    window.title("Nim Game")
+    window.geometry("800x600")
+    def button_cmd():
+        tkinter.messagebox.showinfo("Alert", "You clicked the button")
+    button = tkinter.Button(window, text="I'm a button", width=50, height=30, command=button_cmd)
+    button.pack(side=tkinter.BOTTOM)
+    return window
+
+def show_game_board(stacks: ty.List[int], game_board) -> None:
+    pass
 
 def main(ops: ty.Dict[str, ty.Any]) -> int:
+    #board = setup_game_board()
+    #board.mainloop()
+    #return 0
     pprint(ops, stream=sys.stderr)
     stacks = [int(stack) for stack in ops["STACK"]]
     assert all(
