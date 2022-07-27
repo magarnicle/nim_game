@@ -26,15 +26,12 @@ class PlayerType(IntEnum):
     COMPUTER = 0
     HUMAN = 1
 
-    def __add__(self, value):
-        new_value = (self.value + value) % 2
-        if new_value == 0:
-            return PlayerType.COMPUTER
-        return PlayerType.HUMAN
+class Player:
+    """Represents a player"""
 
-    def __sub__(self, value):
-        return self.__add__(-value)
-
+    def __init__(self, name: str, player_type: PlayerType):
+        self.name = name
+        self.player_type = player_type
 
 def take_objects(stack: int, objects_to_take: int) -> None:
     """Take a number of objects from a stack."""
@@ -89,10 +86,10 @@ def get_valid_stacks(stacks: ty.List[int]) -> ty.List[int]:
     return [i for i, stack in enumerate(stacks) if not stack_empty(stack)]
 
 
-def determine_winner(current_player: PlayerType, misere: bool = False) -> PlayerType:
+def determine_winner(current_player: ty.Tuple[str, PlayerType], misere: bool = False) -> bool:
     if misere:
-        return current_player
-    return current_player + 1
+        return True
+    return False
 
 
 def print_game_board(stacks: ty.List[int]) -> None:
@@ -123,6 +120,11 @@ def setup_game_board() -> tkinter.Tk:
 def show_game_board(stacks: ty.List[int], game_board) -> None:
     pass
 
+def other_player(current_player: Player, players: ty.Tuple[Player, Player]) -> Player:
+    if current_player == players[0]:
+        return players[1]
+    return players[0]
+
 def main(ops: ty.Dict[str, ty.Any]) -> int:
     #board = setup_game_board()
     #board.mainloop()
@@ -132,26 +134,32 @@ def main(ops: ty.Dict[str, ty.Any]) -> int:
     assert all(
         map(lambda stack: stack > 0, stacks)
     ), "Stacks must have at least one object in them"
-    player_turn = PlayerType.COMPUTER if ops["--computer-first"] else PlayerType.HUMAN
+    player1 = ("Human", PlayerType.HUMAN)
+    player2 = ("Computer", PlayerType.COMPUTER)
+    players = (player1, player2)
+    player_turn = player2 if ops["--computer-first"] else player1
     while not game_over(stacks):
         print_game_board(stacks)
-        print(f"It is {player_turn.name}'s turn.")
+        print(f"It is {player_turn[0]}'s turn.")
         if sum(stacks) == 1:
             # One left, take it and end the game
-            player_turn += 1
+            player_turn = other_player(player_turn, players)
             break
         while True:
             try:
-                stack_index, objects_to_take = get_move(player_turn, stacks)
+                stack_index, objects_to_take = get_move(player_turn[1], stacks)
             except PostconditionError as issue:
                 print(f"Error: {issue}. Please try again.\n")
                 continue
             else:
                 break
         stacks[stack_index] = take_objects(stacks[stack_index], objects_to_take)
-        player_turn += 1
-    print(f"{(player_turn - 1).name} takes the last object...")
-    print(f"{determine_winner(player_turn, ops['--misère']).name} won!")
+        player_turn = other_player(player_turn, players)
+    print(f"{other_player(player_turn, players)} takes the last object...")
+    if determine_winner(player_turn, ops['--misère']):
+        print(f"{player_turn[0]} won!")
+    else:
+        print(f"{other_player(player_turn, players)} won!")
     return 0
 
 
