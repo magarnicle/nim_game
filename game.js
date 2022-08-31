@@ -11,8 +11,8 @@ function reset(){
     game_state = {
         "player_turn": 0,
         "stacks": [9, 9, 9],
-        "misere": false,
-        "robot_level": 1,
+        "misere": true,
+        "robot_level": 2,
     };
     reset_button.style = "visibility:hidden";
     game_log.innerHTML = "Welcome to Nim!"
@@ -104,6 +104,52 @@ function get_robot_turn_level_1(){
     return {"stack": stack_choice, "index": index_choice};
 };
 
+function get_robot_turn_level_2(){
+    var current_nim_number = calculate_nim_number(game_state["stacks"]);
+    var future_stacks = Array.from(game_state["stacks"]);
+    var lowest_nim_number = null;
+    for (stack in future_stacks){
+        var saved_coin_number = future_stacks[stack];
+        if (saved_coin_number == 1){
+            continue;
+        };
+        for (var i=0; i < saved_coin_number; i++){
+            future_stacks[stack] = future_stacks[stack] - 1;
+            var future_nim_number = calculate_nim_number(future_stacks);
+            if (lowest_nim_number === null){
+                lowest_nim_number = {"stack": stack, "index": future_stacks[stack] - 1, "coins_taken": i + 1, "nim_number": future_nim_number};
+            } else {
+                // Aim for 0 if normal mode, 1 if misere
+                if (game_state["misere"]){
+                    if (future_nim_number == 0){
+                        if (lowest_nim_number["nim_number"] == 0 && i < lowest_nim_number["coins_taken"]){
+                            lowest_nim_number = {"stack": stack, "index": future_stacks[stack] - 1, "coins_taken": i + 1, "nim_number": future_nim_number};
+                        };
+                    } else {
+                        if ((future_nim_number == lowest_nim_number["nim_number"] && i < lowest_nim_number["coins_taken"]) || (future_nim_number < lowest_nim_number["nim_number"])){
+                            lowest_nim_number = {"stack": stack, "index": future_stacks[stack] - 1, "coins_taken": i + 1, "nim_number": future_nim_number};
+                        };
+                    };
+                } else {
+                    if ((future_nim_number == lowest_nim_number["nim_number"] && i < lowest_nim_number["coins_taken"]) || (future_nim_number < lowest_nim_number["nim_number"])){
+                        lowest_nim_number = {"stack": stack, "index": future_stacks[stack] - 1, "coins_taken": i + 1, "nim_number": future_nim_number};
+                    };
+                };
+            };
+        };
+        future_stacks[stack] = saved_coin_number;
+    };
+    return {"stack": lowest_nim_number["stack"], "index": lowest_nim_number["index"]};
+};
+
+function calculate_nim_number(stacks){
+    // bitwise-xor all the stacks together
+    var nim_number = 0;
+    for (stack in stacks){
+        nim_number = nim_number ^ stacks[stack]
+    };
+    return nim_number;
+};
 
 function take_turn(stack, index){
     log(players[game_state["player_turn"]]["name"] + " took down to " + index + " on stack " + stack);
@@ -111,9 +157,9 @@ function take_turn(stack, index){
     if (game_over()){
         update_game_board(game_state);
         if (game_state["misere"]){
-            log("Game over! " + players[game_state["player_turn"]]["name"] + " won!!");
-        } else {
             log("Game over! " + players[game_state["player_turn"]]["name"] + " lost!!");
+        } else {
+            log("Game over! " + players[game_state["player_turn"]]["name"] + " won!!");
         };
         reset_button.style = "visibility:visible";
         return;
