@@ -11,7 +11,8 @@ function reset(){
     game_state = {
         "player_turn": 0,
         "stacks": [9, 9, 9],
-        "misere": false
+        "misere": false,
+        "robot_level": 1,
     };
     reset_button.style = "visibility:hidden";
     game_log.innerHTML = "Welcome to Nim!"
@@ -47,6 +48,22 @@ function update_game_board(){
 };
 
 function get_robot_turn(){
+    switch (game_state["robot_level"]) {
+        case 0:
+            return get_robot_turn_level_0()
+            break;
+        case 1:
+            return get_robot_turn_level_1()
+            break
+        case 2:
+            return get_robot_turn_level_2()
+            break
+        default:
+            return get_robot_turn_level_0()
+    };
+};
+
+function get_valid_stacks(){
     var valid_stacks = [];
     for (stack in game_state["stacks"]){
         if (game_state["stacks"][stack] > 0){
@@ -54,10 +71,39 @@ function get_robot_turn(){
             valid_stacks.push(stack)
         }
     }
-    stack_choice = valid_stacks[Math.floor(Math.random() * valid_stacks.length)]
-    index_choice = Math.floor(Math.random() * game_state["stacks"][stack_choice])
+    return valid_stacks;
+};
+
+function get_robot_turn_level_0(){
+    var valid_stacks = get_valid_stacks();
+    var stack_choice = valid_stacks[Math.floor(Math.random() * valid_stacks.length)]
+    var index_choice = Math.floor(Math.random() * game_state["stacks"][stack_choice])
     return {"stack": stack_choice, "index": index_choice};
 };
+
+function get_robot_turn_level_1(){
+    // Just stall - take one off the biggest stack each time until you can win.
+    var valid_stacks = get_valid_stacks();
+    if (valid_stacks.length == 1){
+        stack_choice = valid_stacks[0];
+        if (game_state["stacks"][stack_choice] == 1){
+            index_choice = 0;
+        } else {
+            index_choice = 1;
+        }
+    } else {
+        var max_coins_index = 0;
+        for (stack in valid_stacks){
+            if (game_state["stacks"][stack] > game_state["stacks"][max_coins_index]){
+                max_coins_index = stack;
+            };
+        };
+        stack_choice = max_coins_index;
+        index_choice = game_state["stacks"][stack_choice] - 1;
+    };
+    return {"stack": stack_choice, "index": index_choice};
+};
+
 
 function take_turn(stack, index){
     log(players[game_state["player_turn"]]["name"] + " took down to " + index + " on stack " + stack);
