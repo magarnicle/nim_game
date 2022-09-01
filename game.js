@@ -8,11 +8,19 @@ function reset(){
         {"name": "Hugh", "type": "Human"},
         {"name": "Rob", "type": "Robot"}
     ];
+    var stacks = []
+    for (var i=0; i<Math.random() * 5; i++){
+        stacks.push(Math.ceil(Math.random() * 10));
+    };
+    if (stacks.length < 2){
+        stacks.push(Math.ceil(Math.random() * 10));
+    };
+    stacks.sort(function(a, b){return a - b});
     game_state = {
         "player_turn": 0,
-        "stacks": [9, 9, 9],
+        "stacks": stacks,
         "misere": true,
-        "robot_level": 2,
+        "robot_level": 2
     };
     reset_button.style = "visibility:hidden";
     game_log.innerHTML = "Welcome to Nim!"
@@ -212,7 +220,9 @@ function take_turn(stack, index){
     update_game_board(game_state);
     if (players[game_state["player_turn"]]["type"] == "Robot"){
         var robot_turn = get_robot_turn();
-        setTimeout(take_turn, 1000, robot_turn["stack"], robot_turn["index"])
+        //Human could take two turns before robot took theirs, just make it instant
+        //setTimeout(take_turn, 1000, robot_turn["stack"], robot_turn["index"])
+        take_turn(robot_turn["stack"], robot_turn["index"]);
     }
 };
 
