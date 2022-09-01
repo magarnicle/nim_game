@@ -1,13 +1,26 @@
 var game_board = document.getElementById("game_board");
 var game_log = document.getElementById("game_log");
 var reset_button = document.getElementById("reset_button")
-var players = [];
+var new_game_button = document.getElementById("new_game_button")
 var game_state = {};
+var saved_game_state = {};
+
 function reset(){
-    players = [
-        {"name": "Hugh", "type": "Human"},
-        {"name": "Rob", "type": "Robot"}
-    ];
+    for (key of Object.keys(saved_game_state)){
+        if (key == "players" || key == "stacks"){
+            game_state[key] = Array.from(saved_game_state[key]);
+        } else {
+            game_state[key] = saved_game_state[key];
+        };
+    }
+    update_game_board(game_state);
+    reset_button.style = "visibility:hidden";
+    new_game_button.style = "visibility:hidden";
+    game_log.innerHTML = "Welcome to Nim!"
+    update_game_board();
+};
+
+function new_game(){
     var stacks = []
     for (var i=0; i<Math.random() * 5; i++){
         stacks.push(Math.ceil(Math.random() * 10));
@@ -17,12 +30,25 @@ function reset(){
     };
     stacks.sort(function(a, b){return a - b});
     game_state = {
+        "players": [
+            {"name": "Hugh", "type": "Human"},
+            {"name": "Rob", "type": "Robot"}
+        ],
         "player_turn": 0,
         "stacks": stacks,
         "misere": true,
+        "locked": false,
         "robot_level": 2
     };
+    for (key of Object.keys(game_state)){
+        if (key == "players" || key == "stacks"){
+            saved_game_state[key] = Array.from(game_state[key]);
+        } else {
+            saved_game_state[key] = game_state[key];
+        };
+    }
     reset_button.style = "visibility:hidden";
+    new_game_button.style = "visibility:hidden";
     game_log.innerHTML = "Welcome to Nim!"
     update_game_board();
 };
@@ -151,41 +177,29 @@ function get_robot_turn_level_2(){
         };
         future_stacks[stack] = saved_coin_number;
     };
-    if (game_state["misere"]){
-        // We might have to modify our move if all remaining stacks have a single coin
-        future_stacks[lowest_nim_number["stack"]] = lowest_nim_number["index"];
-        var single_stacks = 0;
-        var multi_stacks = false;
-        for (var stack in future_stacks){
-            if (future_stacks[stack] > 1){
-                multi_stacks = true;
-                break
-            };
-            if (future_stacks[stack] == 1){
-                single_stacks++;
-            };
+    // Are we at the end game?
+    future_stacks[lowest_nim_number["stack"]] = lowest_nim_number["index"];
+    var single_stacks = 0;
+    var multi_stacks = false;
+    for (var stack in future_stacks){
+        if (future_stacks[stack] > 1){
+            multi_stacks = true;
+            break
         };
-        if (!multi_stacks){
-            if (single_stacks % 2 == 0){
-                // We need to leave an odd number of single-coin stacks. See if we can
-                // take one less coin from our selected stack
-                if (game_state["stacks"][lowest_nim_number["stack"]] > 2){
-                    lowest_nim_number["index"]++;
-                } else {
-                    // Remove a stack
-                    for (var stack of game_state["stacks"]){
-                        if (game_state["stacks"][stack] > 1){
-                            lowest_nim_number["stack"] = stack;
-                            lowest_nim_number["index"] = 0;
-                            break
-                        };
-                        if (game_state["stacks"][stack] == 1){
-                            lowest_nim_number["stack"] = stack;
-                            lowest_nim_number["index"] = 0;
-                        };
-                    };
-                }
+        if (future_stacks[stack] == 1){
+            single_stacks++;
+        };
+    };
+    if (!multi_stacks){
+        // For misere, we need to leave an odd number of single-coin stacks. For normal mode we want an even number.
+        if (single_stacks % 2 == 0){
+            if (game_state["misere"]){
+                lowest_nim_number["index"] = 0;
             };
+        } else {
+            if (!game_state["misere"]){
+                lowest_nim_number["index"] = 0;
+            }
         };
     };
     return {"stack": lowest_nim_number["stack"], "index": lowest_nim_number["index"]};
@@ -200,30 +214,49 @@ function calculate_nim_number(stacks){
     return nim_number;
 };
 
+function sleep(milliseconds){
+    start = Date.now()
+    while (Date.now().valueOf() - start.valueOf() < milliseconds){
+        continue    
+    };
+}
+
 function take_turn(stack, index){
-    log(players[game_state["player_turn"]]["name"] + " took down to " + index + " on stack " + stack);
+    if (!game_state["locked"]){
+        _take_turn(stack, index, false);
+    };
+};
+
+function _take_turn(stack, index, lock){
+    if (lock){
+        game_state["locked"] = true;
+    };
+    log(game_state["players"][game_state["player_turn"]]["name"] + " took down to " + index + " on stack " + stack);
     game_state["stacks"][stack] = index;
     if (game_over()){
         update_game_board(game_state);
         if (game_state["misere"]){
-            log("Game over! " + players[game_state["player_turn"]]["name"] + " lost!!");
+            log("Game over! " + game_state["players"][game_state["player_turn"]]["name"] + " lost!!");
         } else {
-            log("Game over! " + players[game_state["player_turn"]]["name"] + " won!!");
+            log("Game over! " + game_state["players"][game_state["player_turn"]]["name"] + " won!!");
         };
         reset_button.style = "visibility:visible";
+        new_game_button.style = "visibility:visible";
         return;
     };
     game_state["player_turn"] = game_state["player_turn"] + 1
-    if (game_state["player_turn"] == players.length){
+    if (game_state["player_turn"] == game_state["players"].length){
         game_state["player_turn"] = 0;
     };
     update_game_board(game_state);
-    if (players[game_state["player_turn"]]["type"] == "Robot"){
+    if (game_state["players"][game_state["player_turn"]]["type"] == "Robot"){
         var robot_turn = get_robot_turn();
-        //Human could take two turns before robot took theirs, just make it instant
-        //setTimeout(take_turn, 1000, robot_turn["stack"], robot_turn["index"])
-        take_turn(robot_turn["stack"], robot_turn["index"]);
+        game_state["locked"] = true;
+        setTimeout(_take_turn, 500, robot_turn["stack"], robot_turn["index"], true)
     }
+    if (lock){
+        game_state["locked"] = false;
+    };
 };
 
-reset();
+new_game();
