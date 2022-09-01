@@ -26,7 +26,7 @@ function log(message){
 
 
 function game_over(){
-    for (stack of game_state["stacks"]){
+    for (var stack of game_state["stacks"]){
         if (stack > 0){
             return false;
         };
@@ -36,8 +36,8 @@ function game_over(){
 
 function update_game_board(){
     var all_stacks_display = '';
-    for (stack in game_state["stacks"]){
-        stack_display = '    <tr id="stack_' + stack + '">\n      <td>Stack ' + stack + ":</td>\n";
+    for (var stack in game_state["stacks"]){
+        var stack_display = '    <tr id="stack_' + stack + '">\n      <td>Stack ' + stack + ":</td>\n";
         for (var j=0; j<game_state["stacks"][stack]; j++){
             stack_display = stack_display + '      <td id="coin_' + j + '" onmouseup="take_turn(' + stack + ', ' + j + ')">' + j + '</td>\n';
         };
@@ -65,7 +65,7 @@ function get_robot_turn(){
 
 function get_valid_stacks(){
     var valid_stacks = [];
-    for (stack in game_state["stacks"]){
+    for (var stack in game_state["stacks"]){
         if (game_state["stacks"][stack] > 0){
             console.log("stack " + stack + " is valid with " + game_state["stacks"][stack] + " coins")
             valid_stacks.push(stack)
@@ -86,14 +86,14 @@ function get_robot_turn_level_1(){
     var valid_stacks = get_valid_stacks();
     if (valid_stacks.length == 1){
         stack_choice = valid_stacks[0];
-        if (game_state["stacks"][stack_choice] == 1){
-            index_choice = 0;
-        } else {
+        if (game_state["misere"] && game_state["stacks"][stack_choice] > 1){
             index_choice = 1;
+        } else {
+            index_choice = 0;
         }
     } else {
         var max_coins_index = 0;
-        for (stack in valid_stacks){
+        for (var stack in valid_stacks){
             if (game_state["stacks"][stack] > game_state["stacks"][max_coins_index]){
                 max_coins_index = stack;
             };
@@ -105,39 +105,80 @@ function get_robot_turn_level_1(){
 };
 
 function get_robot_turn_level_2(){
+    var valid_stacks = get_valid_stacks();
+    if (valid_stacks.length == 1){
+        var stack_choice = valid_stacks[0];
+        if (game_state["misere"] && game_state["stacks"][stack_choice] > 1){
+            var index_choice = 1;
+        } else {
+            var index_choice = 0;
+        }
+        return {"stack": stack_choice, "index": index_choice};
+    };
     var current_nim_number = calculate_nim_number(game_state["stacks"]);
     var future_stacks = Array.from(game_state["stacks"]);
     var lowest_nim_number = null;
-    for (stack in future_stacks){
+    for (var stack in future_stacks){
         var saved_coin_number = future_stacks[stack];
-        if (saved_coin_number == 1){
+        if (saved_coin_number == 0){
             continue;
         };
         for (var i=0; i < saved_coin_number; i++){
             future_stacks[stack] = future_stacks[stack] - 1;
+            var this_best = false;
             var future_nim_number = calculate_nim_number(future_stacks);
             if (lowest_nim_number === null){
-                lowest_nim_number = {"stack": stack, "index": future_stacks[stack] - 1, "coins_taken": i + 1, "nim_number": future_nim_number};
+                this_best = true;
             } else {
-                // Aim for 0 if normal mode, 1 if misere
-                if (game_state["misere"]){
-                    if (future_nim_number == 0){
-                        if (lowest_nim_number["nim_number"] == 0 && i < lowest_nim_number["coins_taken"]){
-                            lowest_nim_number = {"stack": stack, "index": future_stacks[stack] - 1, "coins_taken": i + 1, "nim_number": future_nim_number};
-                        };
-                    } else {
-                        if ((future_nim_number == lowest_nim_number["nim_number"] && i < lowest_nim_number["coins_taken"]) || (future_nim_number < lowest_nim_number["nim_number"])){
-                            lowest_nim_number = {"stack": stack, "index": future_stacks[stack] - 1, "coins_taken": i + 1, "nim_number": future_nim_number};
-                        };
-                    };
-                } else {
-                    if ((future_nim_number == lowest_nim_number["nim_number"] && i < lowest_nim_number["coins_taken"]) || (future_nim_number < lowest_nim_number["nim_number"])){
-                        lowest_nim_number = {"stack": stack, "index": future_stacks[stack] - 1, "coins_taken": i + 1, "nim_number": future_nim_number};
-                    };
+                if (future_nim_number < lowest_nim_number["nim_number"]){
+                    this_best = true;
                 };
+                if (future_nim_number == lowest_nim_number["nim_number"] && i < lowest_nim_number["coins_taken"]){
+                    this_best = true;
+                };
+            };
+            if (this_best){
+                lowest_nim_number = {"stack": stack, "index": future_stacks[stack], "coins_taken": i + 1, "nim_number": future_nim_number};
             };
         };
         future_stacks[stack] = saved_coin_number;
+    };
+    if (game_state["misere"]){
+        // We might have to modify our move if all remaining stacks have a single coin
+        future_stacks[lowest_nim_number["stack"]] = lowest_nim_number["index"];
+        var single_stacks = 0;
+        var multi_stacks = false;
+        for (var stack in future_stacks){
+            if (future_stacks[stack] > 1){
+                multi_stacks = true;
+                break
+            };
+            if (future_stacks[stack] == 1){
+                single_stacks++;
+            };
+        };
+        if (!multi_stacks){
+            if (single_stacks % 2 == 0){
+                // We need to leave an odd number of single-coin stacks. See if we can
+                // take one less coin from our selected stack
+                if (game_state["stacks"][lowest_nim_number["stack"]] > 2){
+                    lowest_nim_number["index"]++;
+                } else {
+                    // Remove a stack
+                    for (var stack of game_state["stacks"]){
+                        if (game_state["stacks"][stack] > 1){
+                            lowest_nim_number["stack"] = stack;
+                            lowest_nim_number["index"] = 0;
+                            break
+                        };
+                        if (game_state["stacks"][stack] == 1){
+                            lowest_nim_number["stack"] = stack;
+                            lowest_nim_number["index"] = 0;
+                        };
+                    };
+                }
+            };
+        };
     };
     return {"stack": lowest_nim_number["stack"], "index": lowest_nim_number["index"]};
 };
@@ -145,7 +186,7 @@ function get_robot_turn_level_2(){
 function calculate_nim_number(stacks){
     // bitwise-xor all the stacks together
     var nim_number = 0;
-    for (stack in stacks){
+    for (var stack in stacks){
         nim_number = nim_number ^ stacks[stack]
     };
     return nim_number;
@@ -170,7 +211,7 @@ function take_turn(stack, index){
     };
     update_game_board(game_state);
     if (players[game_state["player_turn"]]["type"] == "Robot"){
-        robot_turn = get_robot_turn();
+        var robot_turn = get_robot_turn();
         setTimeout(take_turn, 1000, robot_turn["stack"], robot_turn["index"])
     }
 };
