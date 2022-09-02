@@ -8,10 +8,18 @@ td {width: 150px}
   </style>
 </head>
 <body>
-  <table id="game_board"></table>
+  <div id="setup">
+      <button id="reset_button" onclick="reset()">Restart</button>
+      <button id="new_game_button" onclick="new_game()">New Game</button>
+      <input type="checkbox" id="misere_button" name="misere_button" value="true">
+      <label for="misere_button">Misere</label>
+      <input type="radio" id="human_button" name="starting_player" value="0" checked>
+      <label for="human_button">Human starts</label>
+      <input type="radio" id="robot_button" name="starting_player" value="1">
+      <label for="robot_button">Robot starts</label>
+  </div>
+  <div style="height: 400px"><table id="game_board"></table></div>
   <div id="game_log"></div>
-  <div id="reset_button" onmouseup="reset()">Restart</div>
-  <div id="new_game_button" onmouseup="new_game()">New Game</div>
   <script src="game.js"></script>
 </body>
 </html>

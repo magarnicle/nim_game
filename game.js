@@ -1,7 +1,8 @@
 var game_board = document.getElementById("game_board");
 var game_log = document.getElementById("game_log");
-var reset_button = document.getElementById("reset_button")
-var new_game_button = document.getElementById("new_game_button")
+var setup_details = document.getElementById("setup");
+var misere_button = document.getElementById("misere_button");
+var starting_player = document.getElementsByName("starting_player");
 var game_state = {};
 var saved_game_state = {};
 
@@ -14,8 +15,7 @@ function reset(){
         };
     }
     update_game_board(game_state);
-    reset_button.style = "visibility:hidden";
-    new_game_button.style = "visibility:hidden";
+    setup_details.style = "visibility:hidden";
     game_log.innerHTML = "Welcome to Nim!"
     update_game_board();
 };
@@ -29,17 +29,21 @@ function new_game(){
         stacks.push(Math.ceil(Math.random() * 10));
     };
     stacks.sort(function(a, b){return a - b});
+    var player_turn = starting_player[0].checked ? 0 : 1;
     game_state = {
         "players": [
             {"name": "Hugh", "type": "Human"},
             {"name": "Rob", "type": "Robot"}
         ],
-        "player_turn": 0,
+        "player_turn": player_turn,
         "stacks": stacks,
-        "misere": true,
+        "misere": misere_button.checked,
         "locked": false,
         "robot_level": 2
     };
+    game_log.innerHTML = "Welcome to Nim!"
+    log("Misere?: " + game_state["misere"])
+    log("Player turn?: " + (game_state["player_turn"] == 0 ? "Human" : "Robot"))
     for (key of Object.keys(game_state)){
         if (key == "players" || key == "stacks"){
             saved_game_state[key] = Array.from(game_state[key]);
@@ -47,10 +51,16 @@ function new_game(){
             saved_game_state[key] = game_state[key];
         };
     }
-    reset_button.style = "visibility:hidden";
-    new_game_button.style = "visibility:hidden";
-    game_log.innerHTML = "Welcome to Nim!"
+    setup_details.style = "visibility:hidden";
     update_game_board();
+    if (game_state["players"][game_state["player_turn"]]["type"] == "Robot"){
+        var robot_turn = get_robot_turn();
+        game_state["locked"] = true;
+        setTimeout(_take_turn, 500, robot_turn["stack"], robot_turn["index"], true)
+    }
+    if (lock){
+        game_state["locked"] = false;
+    };
 };
 
 function log(message){
@@ -191,10 +201,17 @@ function get_robot_turn_level_2(){
             if (lowest_nim_number === null){
                 this_best = true;
             } else {
-                if (future_nim_number < lowest_nim_number["nim_number"]){
-                    this_best = true;
-                };
-                if (future_nim_number == lowest_nim_number["nim_number"] && i < lowest_nim_number["coins_taken"]){
+                if (future_nim_number == 0){
+                    if (lowest_nim_number["nim_number"] == 0){
+                        // Win quickly
+                        if (i > lowest_nim_number["coins_taken"]){
+                            this_best = true;
+                        };
+                    } else {
+                        this_best = true;
+                    };
+                } else if (lowest_nim_number["nim_number"] != 0 && i < lowest_nim_number["coins_taken"]){
+                    // Lose slowly
                     this_best = true;
                 };
             };
@@ -267,8 +284,7 @@ function _take_turn(stack, index, lock){
         } else {
             log("Game over! " + game_state["players"][game_state["player_turn"]]["name"] + " won!!");
         };
-        reset_button.style = "visibility:visible";
-        new_game_button.style = "visibility:visible";
+        setup_details.style = "visibility:visible";
         return;
     };
     game_state["player_turn"] = game_state["player_turn"] + 1
@@ -286,4 +302,3 @@ function _take_turn(stack, index, lock){
     };
 };
 
-new_game();
