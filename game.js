@@ -1,6 +1,8 @@
 var game_board = document.getElementById("game_board");
 var game_log = document.getElementById("game_log");
-var setup_details = document.getElementById("setup");
+var start_game_button = document.getElementById("start_button")
+var reset_button = document.getElementById("reset_button")
+var settings = document.getElementById("settings");
 var misere_button = document.getElementById("misere_button");
 var starting_player = document.getElementsByName("starting_player");
 var game_state = {};
@@ -14,13 +16,26 @@ function reset(){
             game_state[key] = saved_game_state[key];
         };
     }
-    update_game_board(game_state);
-    setup_details.style = "visibility:hidden";
-    game_log.innerHTML = "Welcome to Nim!"
+    enable_settings();
+    start_game_button.style = "visibility: visible";
+    game_log.innerHTML = "Welcome to Nim, again!"
     update_game_board();
 };
 
+function enable_settings(){
+    for (var node of settings.children){
+        node.disabled = false;
+    }
+};
+
+function disable_settings(){
+    for (var node of settings.children){
+        node.disabled = true;
+    }
+};
+
 function new_game(){
+    reset_button.style = "visibility: hidden";
     var stacks = []
     for (var i=0; i<Math.random() * 5; i++){
         stacks.push(Math.ceil(Math.random() * 10));
@@ -41,18 +56,28 @@ function new_game(){
         "locked": false,
         "robot_level": 2
     };
-    game_log.innerHTML = "Welcome to Nim!"
-    log("Misere?: " + game_state["misere"])
-    log("Player turn?: " + (game_state["player_turn"] == 0 ? "Human" : "Robot"))
     for (key of Object.keys(game_state)){
         if (key == "players" || key == "stacks"){
             saved_game_state[key] = Array.from(game_state[key]);
         } else {
             saved_game_state[key] = game_state[key];
         };
-    }
-    setup_details.style = "visibility:hidden";
+    };
+    enable_settings();
+    start_game_button.style = "visibility: visible";
+    game_log.innerHTML = "Welcome to Nim!"
     update_game_board();
+};
+
+function start_game(){
+    start_game_button.style = "visibility: hidden";
+    reset_button.style = "visibility: visible";
+    var player_turn = starting_player[0].checked ? 0 : 1;
+    game_state["player_turn"] = player_turn;
+    game_state["misere"] = misere_button.checked;
+    game_state["robot_level"] = 2;
+    log("Misere?: " + game_state["misere"])
+    log("Player turn?: " + (game_state["player_turn"] == 0 ? "Human" : "Robot"))
     if (game_state["players"][game_state["player_turn"]]["type"] == "Robot"){
         var robot_turn = get_robot_turn();
         game_state["locked"] = true;
@@ -61,7 +86,9 @@ function new_game(){
     if (lock){
         game_state["locked"] = false;
     };
-};
+    disable_settings();
+    update_game_board();
+}
 
 function log(message){
     console.log(message);
@@ -284,7 +311,6 @@ function _take_turn(stack, index, lock){
         } else {
             log("Game over! " + game_state["players"][game_state["player_turn"]]["name"] + " won!!");
         };
-        setup_details.style = "visibility:visible";
         return;
     };
     game_state["player_turn"] = game_state["player_turn"] + 1
@@ -302,3 +328,4 @@ function _take_turn(stack, index, lock){
     };
 };
 
+new_game();
