@@ -69,15 +69,42 @@ function game_over(){
 };
 
 function update_game_board(){
+    update_game_board_vertical();
+    //update_game_board_horizontal();
+};
+
+function update_game_board_horizontal(){
     var all_stacks_display = '';
     for (var stack in game_state["stacks"]){
-        var stack_display = '    <tr id="stack_' + stack + '">\n      <td>Stack ' + stack + ":</td>\n";
-        for (var j=0; j<game_state["stacks"][stack]; j++){
-            stack_display = stack_display + '      <td id="coin_' + j + '" onmouseup="take_turn(' + stack + ', ' + j + ')">' + j + '</td>\n';
+        var stack_display = '    <tr  style="border-style: solid" id="stack_' + stack + '">\n      <td style="border-style: solid">Stack ' + stack + ":</td>\n";
+        for (var i=0; i<game_state["stacks"][stack]; i++){
+            stack_display += '      <td style="border-style: solid" id="coin_' + i + '" onmouseup="take_turn(' + stack + ', ' + i + ')">' + i + '</td>\n';
         };
-        stack_display = stack_display + '    </tr>\n';
-        all_stacks_display = all_stacks_display + stack_display;
+        stack_display += '    </tr>\n';
+        all_stacks_display += stack_display;
     };
+    game_board.innerHTML = all_stacks_display;
+};
+
+function update_game_board_vertical(){
+    var all_stacks_display = ''
+    var max_coins = Math.max(...saved_game_state["stacks"])
+    for (var i=max_coins-1; i>=0; i--){
+        all_stacks_display += '    <tr style="border-style: solid" >'
+        for (var stack in game_state["stacks"]){
+            if (game_state["stacks"][stack] > i){
+                all_stacks_display += '      <td style="border-style: solid" id="coin_' + i + '" onmouseup="take_turn(' + stack + ', ' + i + ')">' + '</td>\n';
+            } else {
+                all_stacks_display += '      <td style="border-style: none"></td>\n';
+            }
+        };
+        all_stacks_display += '    </tr>'
+    }
+    all_stacks_display += '    <tr style="border-style: solid" >'
+    for (var stack in game_state["stacks"]){
+        all_stacks_display += '\n      <td id="stack_' + stack + '" style="border-top-style: solid; border-color: #333333" ></td>\n';
+    };
+    all_stacks_display += '\n</tr>'
     game_board.innerHTML = all_stacks_display;
 };
 
