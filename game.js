@@ -17,7 +17,7 @@ function reset(){
         };
     }
     enable_settings();
-    start_game_button.style = "visibility: visible";
+    start_game_button.style.visibility = "visible";
     game_log.innerHTML = "Welcome to Nim, again!"
     update_game_board();
 };
@@ -53,7 +53,7 @@ function new_game(){
         "player_turn": player_turn,
         "stacks": stacks,
         "misere": misere_button.checked,
-        "locked": false,
+        "locked": true,
         "robot_level": 2
     };
     for (key of Object.keys(game_state)){
@@ -70,22 +70,18 @@ function new_game(){
 };
 
 function start_game(){
+    game_state["locked"] = false;
     start_game_button.style = "visibility: hidden";
     reset_button.style = "visibility: visible";
     var player_turn = starting_player[0].checked ? 0 : 1;
     game_state["player_turn"] = player_turn;
     game_state["misere"] = misere_button.checked;
     game_state["robot_level"] = 2;
-    log("Misere?: " + game_state["misere"])
-    log("Player turn?: " + (game_state["player_turn"] == 0 ? "Human" : "Robot"))
     if (game_state["players"][game_state["player_turn"]]["type"] == "Robot"){
         var robot_turn = get_robot_turn();
         game_state["locked"] = true;
         setTimeout(_take_turn, 500, robot_turn["stack"], robot_turn["index"], true)
     }
-    if (lock){
-        game_state["locked"] = false;
-    };
     disable_settings();
     update_game_board();
 }
@@ -115,7 +111,7 @@ function update_game_board_horizontal(){
     for (var stack in game_state["stacks"]){
         var stack_display = '    <tr  style="border-style: solid" id="stack_' + stack + '">\n      <td style="border-style: solid">Stack ' + stack + ":</td>\n";
         for (var i=0; i<game_state["stacks"][stack]; i++){
-            stack_display += '      <td style="border-style: solid" id="coin_' + i + '" onmouseup="take_turn(' + stack + ', ' + i + ')">' + i + '</td>\n';
+            stack_display += '      <td style="border-style: solid" id="coin_' + stack + ',' + i + '" onmouseup="take_turn(' + stack + ', ' + i + ')">' + i + '</td>\n';
         };
         stack_display += '    </tr>\n';
         all_stacks_display += stack_display;
@@ -130,7 +126,7 @@ function update_game_board_vertical(){
         all_stacks_display += '    <tr style="border-style: solid" >'
         for (var stack in game_state["stacks"]){
             if (game_state["stacks"][stack] > i){
-                all_stacks_display += '      <td style="border-style: solid" id="coin_' + i + '" onmouseup="take_turn(' + stack + ', ' + i + ')">' + '</td>\n';
+                all_stacks_display += '      <td class="coin" id="coin_' + stack + ',' + i + '" onmousedown="highlight_coins(' + stack + ', ' + i + ')"onmouseover="highlight_coins(' + stack + ', ' + i + ')" onmouseout="highlights_off()" style="border-style: solid" id="coin_' + i + '" onmouseup="take_turn(' + stack + ', ' + i + ')">' + '</td>\n';
             } else {
                 all_stacks_display += '      <td style="border-style: none"></td>\n';
             }
@@ -139,7 +135,7 @@ function update_game_board_vertical(){
     }
     all_stacks_display += '    <tr style="border-style: solid" >'
     for (var stack in game_state["stacks"]){
-        all_stacks_display += '\n      <td id="stack_' + stack + '" style="border-top-style: solid; border-color: #333333" ></td>\n';
+        all_stacks_display += '\n      <td id="stack_' + stack + '" style="border-top-style: solid; color: #999999" ></td>\n';
     };
     all_stacks_display += '\n</tr>'
     game_board.innerHTML = all_stacks_display;
@@ -302,12 +298,13 @@ function _take_turn(stack, index, lock){
     if (lock){
         game_state["locked"] = true;
     };
-    log(game_state["players"][game_state["player_turn"]]["name"] + " took down to " + index + " on stack " + stack);
+    log(game_state["players"][game_state["player_turn"]]["name"] + " took coins " + (Number(index) + 1) + " and up on stack " + (Number(stack) + 1));
     game_state["stacks"][stack] = index;
     if (game_over()){
         update_game_board(game_state);
         if (game_state["misere"]){
-            log("Game over! " + game_state["players"][game_state["player_turn"]]["name"] + " lost!!");
+            other_player = game_state["player_turn"] ^ 1;
+            log("Game over! " + game_state["players"][other_player]["name"] + " won!!");
         } else {
             log("Game over! " + game_state["players"][game_state["player_turn"]]["name"] + " won!!");
         };
@@ -320,12 +317,32 @@ function _take_turn(stack, index, lock){
     update_game_board(game_state);
     if (game_state["players"][game_state["player_turn"]]["type"] == "Robot"){
         var robot_turn = get_robot_turn();
+        sleep(300);
+        highlight_coins(robot_turn["stack"], robot_turn["index"]);
         game_state["locked"] = true;
-        setTimeout(_take_turn, 500, robot_turn["stack"], robot_turn["index"], true)
+        setTimeout(_take_turn, 200, robot_turn["stack"], robot_turn["index"], true)
     }
     if (lock){
         game_state["locked"] = false;
     };
+};
+
+function highlight_coins(stack, index){
+    if (game_state["locked"]){
+        return;
+    };
+    for (var i=index; i<game_state["stacks"][stack]; i++){
+        var coin = document.getElementById("coin_" + stack + "," + i);
+        coin.style.backgroundColor = "#0088AA88";
+    };
+};
+
+function highlights_off(){
+    var coins = document.getElementsByClassName("coin");
+    for (coin of coins){
+        coin.style.backgroundColor = null;
+    };
+
 };
 
 new_game();
