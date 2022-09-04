@@ -47,8 +47,8 @@ function new_game(){
     var player_turn = starting_player[0].checked ? 0 : 1;
     game_state = {
         "players": [
-            {"name": "Hugh", "type": "Human"},
-            {"name": "Rob", "type": "Robot"}
+            {"name": "You", "type": "Human"},
+            {"name": "Robot", "type": "Robot"}
         ],
         "player_turn": player_turn,
         "stacks": stacks,
@@ -212,6 +212,7 @@ function get_robot_turn_level_2(){
     var current_nim_number = calculate_nim_number(game_state["stacks"]);
     var future_stacks = Array.from(game_state["stacks"]);
     var lowest_nim_number = null;
+    var possible_losing_moves = [];
     for (var stack in future_stacks){
         var saved_coin_number = future_stacks[stack];
         if (saved_coin_number == 0){
@@ -233,9 +234,8 @@ function get_robot_turn_level_2(){
                     } else {
                         this_best = true;
                     };
-                } else if (lowest_nim_number["nim_number"] != 0 && i < lowest_nim_number["coins_taken"]){
-                    // Lose slowly
-                    this_best = true;
+                } else if (lowest_nim_number["nim_number"] != 0){
+                    possible_losing_moves.push({"stack": stack, "index": future_stacks[stack]})
                 };
             };
             if (this_best){
@@ -244,6 +244,9 @@ function get_robot_turn_level_2(){
         };
         future_stacks[stack] = saved_coin_number;
     };
+    if (lowest_nim_number === null){
+        lowest_nim_number = possible_losing_moves[Math.floor(Math.random() * possible_losing_moves.length)]
+    }
     // Are we at the end game?
     future_stacks[lowest_nim_number["stack"]] = lowest_nim_number["index"];
     var single_stacks = 0;
