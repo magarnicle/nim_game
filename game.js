@@ -37,11 +37,11 @@ function disable_settings(){
 function new_game(){
     reset_button.style = "visibility: hidden";
     var stacks = []
-    for (var i=0; i<Math.random() * 5; i++){
-        stacks.push(Math.ceil(Math.random() * 10));
+    for (var i=0; i<Math.round(Math.random() * 5); i++){
+        stacks.push(Math.round(Math.random() * 10));
     };
     if (stacks.length < 2){
-        stacks.push(Math.ceil(Math.random() * 10));
+        stacks.push(Math.round(Math.random() * 10));
     };
     stacks.sort(function(a, b){return a - b});
     var player_turn = starting_player[0].checked ? 0 : 1;
@@ -170,8 +170,8 @@ function get_valid_stacks(){
 
 function get_robot_turn_level_0(){
     var valid_stacks = get_valid_stacks();
-    var stack_choice = valid_stacks[Math.floor(Math.random() * valid_stacks.length)]
-    var index_choice = Math.floor(Math.random() * game_state["stacks"][stack_choice])
+    var stack_choice = valid_stacks[Math.round(Math.random() * (valid_stacks.length - 1))]
+    var index_choice = Math.round(Math.random() * game_state["stacks"][stack_choice])
     return {"stack": stack_choice, "index": index_choice};
 };
 
@@ -223,7 +223,11 @@ function get_robot_turn_level_2(){
             var this_best = false;
             var future_nim_number = calculate_nim_number(future_stacks);
             if (lowest_nim_number === null){
-                this_best = true;
+                if (future_nim_number == 0){
+                    this_best = true;
+                } else {
+                    possible_losing_moves.push({"stack": stack, "index": future_stacks[stack]})
+                };
             } else {
                 if (future_nim_number == 0){
                     if (lowest_nim_number["nim_number"] == 0){
@@ -245,7 +249,7 @@ function get_robot_turn_level_2(){
         future_stacks[stack] = saved_coin_number;
     };
     if (lowest_nim_number === null){
-        lowest_nim_number = possible_losing_moves[Math.floor(Math.random() * possible_losing_moves.length)]
+        lowest_nim_number = possible_losing_moves[Math.round(Math.random() * (possible_losing_moves.length - 1))]
     }
     // Are we at the end game?
     future_stacks[lowest_nim_number["stack"]] = lowest_nim_number["index"];
