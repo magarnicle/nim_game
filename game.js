@@ -37,13 +37,13 @@ function disable_settings(){
 function new_game(){
     reset_button.style = "visibility: hidden";
     var stacks = []
-    for (var i=0; i<Math.round(Math.random() * 5); i++){
-        stacks.push(Math.round(Math.random() * 10));
+    for (var i=0; i<Math.ceil(Math.random() * 5); i++){
+        stacks.push(Math.ceil(Math.random() * 10));
     };
     if (stacks.length < 2){
-        stacks.push(Math.round(Math.random() * 10));
+        stacks.push(Math.ceil(Math.random() * 10));
     };
-    stacks.sort(function(a, b){return a - b});
+    //stacks.sort(function(a, b){return a - b});
     var player_turn = starting_player[0].checked ? 0 : 1;
     game_state = {
         "players": [
@@ -54,6 +54,7 @@ function new_game(){
         "stacks": stacks,
         "misere": misere_button.checked,
         "locked": true,
+        "started": false,
         "robot_level": 2
     };
     for (key of Object.keys(game_state)){
@@ -77,6 +78,7 @@ function start_game(){
     game_state["player_turn"] = player_turn;
     game_state["misere"] = misere_button.checked;
     game_state["robot_level"] = 2;
+    game_state["started"] = false;
     if (game_state["players"][game_state["player_turn"]]["type"] == "Robot"){
         var robot_turn = get_robot_turn();
         game_state["locked"] = true;
@@ -84,6 +86,7 @@ function start_game(){
     }
     disable_settings();
     update_game_board();
+    log("Game started!")
 }
 
 function log(message){
@@ -296,7 +299,11 @@ function sleep(milliseconds){
 }
 
 function take_turn(stack, index){
-    if (!game_state["locked"]){
+    if (game_state["locked"]){
+        if (!game_state["started"]){
+            start_game();
+        };
+    } else {
         _take_turn(stack, index, false);
     };
 };
